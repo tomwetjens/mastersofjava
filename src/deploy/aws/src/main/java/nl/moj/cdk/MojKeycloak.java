@@ -1,12 +1,10 @@
 package nl.moj.cdk;
 
 import software.amazon.awscdk.RemovalPolicy;
+import software.amazon.awscdk.services.ec2.Port;
 import software.amazon.awscdk.services.ecs.*;
-import software.amazon.awscdk.services.elasticloadbalancingv2.AddApplicationActionProps;
-import software.amazon.awscdk.services.elasticloadbalancingv2.AddApplicationTargetsProps;
 import software.amazon.awscdk.services.elasticloadbalancingv2.HealthCheck;
-import software.amazon.awscdk.services.elasticloadbalancingv2.ListenerAction;
-import software.amazon.awscdk.services.elasticloadbalancingv2.ListenerCondition;
+import software.amazon.awscdk.services.elasticloadbalancingv2.*;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.constructs.Construct;
@@ -96,23 +94,26 @@ class MojKeycloak extends Construct {
                 .taskDefinition(taskDef)
                 .build();
 
-//        var targetGroup = stack.httpListener.addTargets("KeycloakService", AddApplicationTargetsProps.builder()
-//                .targetGroupName("MojKeycloakTargetGroup")
-//                .port(8080)
-//                .targets(List.of(service))
-//                .healthCheck(HealthCheck.builder()
-//                        .enabled(false)
-//                        .build())
-//                .build());
-//
-//        stack.httpListener.addAction("KeycloakServiceAction", AddApplicationActionProps.builder()
-//                .priority(10)
-//                .conditions(List.of(ListenerCondition.pathPatterns(List.of(
-//                        "/auth/*",
-//                        "/admin", "/admin/*",
-//                        "/realms"
-//                ))))
-//                .action(ListenerAction.forward(List.of(targetGroup)))
-//                .build());
+        service.getConnections().allowFrom(stack.loadBalancer, Port.tcp(8080));
+
+        var targetGroup = stack.httpListener.addTargets("KeycloakService", AddApplicationTargetsProps.builder()
+                .targetGroupName("MojKeycloakTargetGroup")
+                .port(8080)
+                .targets(List.of(service))
+                .healthCheck(HealthCheck.builder()
+                        .path("/")
+                        .port("8080")
+                        .build())
+                .build());
+
+        stack.httpListener.addAction("KeycloakServiceAction", AddApplicationActionProps.builder()
+                .priority(10)
+                .conditions(List.of(ListenerCondition.pathPatterns(List.of(
+                        "/auth/*",
+                        "/admin", "/admin/*",
+                        "/realms"
+                ))))
+                .action(ListenerAction.forward(List.of(targetGroup)))
+                .build());
     }
 }
