@@ -1,6 +1,5 @@
-version: '2.4'
 services:
-  postgresql:
+  postgres:
     image: postgres:15
     cpus: 1
     mem_reservation: 128m
@@ -43,7 +42,7 @@ services:
     networks:
       - moj
     depends_on:
-      postgresql:
+      postgres:
         condition: service_started
 
   controller:
@@ -64,7 +63,7 @@ services:
     networks:
       - moj
     depends_on:
-      postgresql:
+      postgres:
         condition: service_started
       auth:
         condition: service_started
